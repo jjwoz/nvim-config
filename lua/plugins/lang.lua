@@ -12,6 +12,27 @@ return {
   {
     "neovim/nvim-lspconfig",
     opts = {
+      setup = {
+        gopls = function(_, opts)
+          -- Workaround: gopls doesn't advertise semanticTokensProvider on attach.
+          -- Guard against nil capabilities (broken in upstream LazyVim go extra).
+          Snacks.util.lsp.on({ name = "gopls" }, function(_, client)
+            if not client.server_capabilities.semanticTokensProvider then
+              local caps = client.config and client.config.capabilities
+              local semantic = caps and caps.textDocument and caps.textDocument.semanticTokens
+              if not semantic then return end
+              client.server_capabilities.semanticTokensProvider = {
+                full = true,
+                legend = {
+                  tokenTypes = semantic.tokenTypes,
+                  tokenModifiers = semantic.tokenModifiers,
+                },
+                range = true,
+              }
+            end
+          end)
+        end,
+      },
       servers = {
         gopls = {
           settings = {
@@ -132,6 +153,37 @@ return {
   },
 
   -- ────────────────────────────────────────────────────────────
+  -- FORMATTING — prettier on save for all web file types
+  -- conform.nvim is bundled by LazyVim; we extend formatters_by_ft and
+  -- enable format_on_save. Prettier handles JS/TS/CSS/JSON/YAML/MDX;
+  -- sql-formatter handles .sql files (Supabase migrations etc).
+  -- ────────────────────────────────────────────────────────────
+  {
+    "stevearc/conform.nvim",
+    opts = {
+      formatters_by_ft = {
+        javascript = { "prettier" },
+        javascriptreact = { "prettier" },
+        typescript = { "prettier" },
+        typescriptreact = { "prettier" },
+        css = { "prettier" },
+        scss = { "prettier" },
+        html = { "prettier" },
+        json = { "prettier" },
+        jsonc = { "prettier" },
+        yaml = { "prettier" },
+        markdown = { "prettier" },
+        mdx = { "prettier" },
+        sql = { "sql_formatter" },
+      },
+      format_on_save = {
+        timeout_ms = 2000,
+        lsp_fallback = true,
+      },
+    },
+  },
+
+  -- ────────────────────────────────────────────────────────────
   -- MASON — extra tools beyond what the lang extras install
   -- ────────────────────────────────────────────────────────────
   {
@@ -157,6 +209,8 @@ return {
         "pyright",
         "ruff",
         "debugpy",
+        -- SQL (Supabase migrations)
+        "sql-formatter",
       },
     },
   },

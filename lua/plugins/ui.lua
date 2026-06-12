@@ -50,4 +50,26 @@ return {
       },
     },
   },
+
+  -- ────────────────────────────────────────────────────────────
+  -- BREADCRUMBS — IntelliJ-style winbar showing file > class > method
+  -- attach_navic = false: LazyVim's LSP on_attach already attaches navic,
+  -- so we let it do that and just consume the context here.
+  -- ────────────────────────────────────────────────────────────
+  {
+    "utilyre/barbecue.nvim",
+    name = "barbecue",
+    version = "*",
+    dependencies = {
+      "SmiteshP/nvim-navic",
+      "nvim-tree/nvim-web-devicons",
+    },
+    event = "BufReadPost",
+    opts = {
+      attach_navic = false,
+      show_dirname = false,
+      show_basename = false,
+      theme = "auto",
+    },
+  },
 }
