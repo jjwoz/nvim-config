@@ -70,10 +70,25 @@ return {
     end,
   },
 
+  -- ────────────────────────────────────────────────────────────
+  -- JB — JetBrains IDE colorscheme (the actual IntelliJ look)
+  -- dark/light controlled by vim.o.background
+  -- ────────────────────────────────────────────────────────────
+  {
+    "nickkadutskyi/jb.nvim",
+    lazy = false,
+    priority = 1000,
+    opts = {},
+    config = function(_, opts)
+      vim.o.background = "dark"
+      require("jb").setup(opts)
+    end,
+  },
+
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "material",
+      colorscheme = "jb",
     },
   },
 }
