@@ -1,12 +1,25 @@
 return {
-  -- add gruvbox
-  { "catppuccin/nvim" },
+  -- TokyoNight — the colorscheme visible in :Lazy sync
+  -- Variants: "tokyonight-night" (darkest), "tokyonight-storm", "tokyonight-moon", "tokyonight-day"
+  {
+    "folke/tokyonight.nvim",
+    opts = {
+      style = "night",
+      transparent = false,
+      terminal_colors = true,
+      styles = {
+        comments = { italic = true },
+        keywords = { italic = true },
+        functions = {},
+        variables = {},
+      },
+    },
+  },
 
-  -- Configure LazyVim to load gruvbox
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "catppuccin-frappe",
+      colorscheme = "tokyonight-night",
     },
   },
 }
