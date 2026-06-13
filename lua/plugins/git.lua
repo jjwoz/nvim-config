@@ -43,8 +43,8 @@ return {
       { "<leader>gp", "<cmd>Neogit pull<cr>",       desc = "Git pull" },
     },
     opts = {
-      -- Open like IntelliJ's panel: full-width at the top
-      kind = "split",
+      -- Open as a left sidebar like IntelliJ's Commit panel
+      kind = "vsplit_left",
       commit_editor = {
         kind = "split",
         show_staged_diff = true,
