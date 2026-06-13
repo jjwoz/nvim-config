@@ -43,8 +43,9 @@ return {
       { "<leader>gp", "<cmd>Neogit pull<cr>",       desc = "Git pull" },
     },
     opts = {
-      -- Open as a left sidebar like IntelliJ's Commit panel
-      kind = "vsplit_left",
+      -- edgy.nvim captures NeogitStatus and pins it to the left sidebar.
+      -- Use "split" so edgy can intercept; vsplit_left would fight edgy.
+      kind = "split",
       commit_editor = {
         kind = "split",
         show_staged_diff = true,

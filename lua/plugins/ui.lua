@@ -99,6 +99,74 @@ return {
   },
 
   -- ────────────────────────────────────────────────────────────
+  -- EDGY — persistent sidebar panels (IntelliJ tool windows)
+  -- edgy captures windows by filetype and snaps them to edges.
+  -- Left:   neogit (git panel) + snacks explorer
+  -- Right:  aerial (code outline / symbols)
+  -- Bottom: terminal, trouble, quickfix
+  --
+  -- Keybindings:
+  --   <leader>ue  → toggle all edgy sidebars
+  --   <leader>uE  → picker to jump between open edgy panels
+  -- ────────────────────────────────────────────────────────────
+  {
+    "folke/edgy.nvim",
+    opts = function(_, opts)
+      opts.left = opts.left or {}
+      opts.right = opts.right or {}
+      opts.bottom = opts.bottom or {}
+
+      -- ── LEFT SIDEBAR ─────────────────────────────────────────
+      -- Snacks explorer (file tree)
+      table.insert(opts.left, 1, {
+        title = " Explorer",
+        ft = "snacks_picker_list",
+        size = { width = 35 },
+        filter = function(buf)
+          -- Only capture the explorer layout, not floating file/grep pickers
+          local ok, picker = pcall(function()
+            return require("snacks.picker").get_picker()
+          end)
+          return ok and picker and picker.opts and picker.opts.source == "explorer"
+        end,
+      })
+
+      -- Neogit commit/status panel
+      table.insert(opts.left, {
+        title = " Git",
+        ft = "NeogitStatus",
+        size = { width = 45 },
+        pinned = true,         -- keep it open across buffer switches
+        open = "Neogit",       -- command to open if not visible
+      })
+
+      -- ── RIGHT SIDEBAR ────────────────────────────────────────
+      -- Aerial code outline (symbols, IntelliJ's Structure panel)
+      table.insert(opts.right, {
+        title = " Outline",
+        ft = "aerial",
+        size = { width = 35 },
+        pinned = false,
+        open = "AerialOpen",
+      })
+
+      -- ── BOTTOM ───────────────────────────────────────────────
+      -- Snacks terminal
+      table.insert(opts.bottom, {
+        ft = "snacks_terminal",
+        size = { height = 0.3 },
+        title = " Terminal %{b:snacks_terminal.id}",
+        filter = function(_, win)
+          return vim.w[win].snacks_win
+            and vim.w[win].snacks_win.position == "bottom"
+            and vim.w[win].snacks_win.relative == "editor"
+            and not vim.w[win].trouble_preview
+        end,
+      })
+    end,
+  },
+
+  -- ────────────────────────────────────────────────────────────
   -- BREADCRUMBS — IntelliJ-style winbar showing file > class > method
   -- attach_navic = false: LazyVim's LSP on_attach already attaches navic,
   -- so we let it do that and just consume the context here.
