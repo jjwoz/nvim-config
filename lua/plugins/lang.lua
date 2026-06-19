@@ -121,33 +121,90 @@ return {
   -- ────────────────────────────────────────────────────────────
   -- PYTHON
   -- Extra: lazyvim.plugins.extras.lang.python
-  -- Installs: pyright, ruff (lsp + formatter)
+  --
+  -- Role split:
+  --   pyright → type checking + inlay hints + go-to-def/hover
+  --   ruff    → linting (E/F/W/I/N/UP/B/C4/SIM) + auto-fix + formatting
+  --
+  -- Overlap prevention:
+  --   pyright's unused-import / unused-variable warnings are silenced
+  --   because ruff F401/F841 handles them (avoids double-reporting).
+  --   pyright's organizeImports is disabled — ruff I-rules own imports.
   -- ────────────────────────────────────────────────────────────
   {
     "neovim/nvim-lspconfig",
     opts = function(_, opts)
-      -- The python extra defaults to basedpyright — swap it out for official pyright
       opts.servers = opts.servers or {}
+
+      -- Drop basedpyright (LazyVim python extra default)
       opts.servers.basedpyright = nil
 
+      -- ── PYRIGHT — types only ─────────────────────────────────
       opts.servers.pyright = {
         settings = {
           python = {
             analysis = {
-              typeCheckingMode = "standard",  -- off | basic | standard | strict
-              autoSearchPaths = true,
-              diagnosticMode = "openFilesOnly",
+              typeCheckingMode    = "standard",       -- off|basic|standard|strict
+              autoSearchPaths     = true,
+              diagnosticMode      = "openFilesOnly",  -- "workspace" for full-project scan
               useLibraryCodeForTypes = true,
+              -- Suppress diagnostics ruff already covers
+              diagnosticSeverityOverrides = {
+                reportUnusedImport   = "none",  -- ruff F401
+                reportUnusedVariable = "none",  -- ruff F841
+              },
+              -- Inlay hints (pyright ≥ 1.1.300)
+              inlayHints = {
+                variableTypes      = true,
+                functionReturnTypes = true,
+                callArgumentNames  = "partial",   -- only non-obvious arg names
+                pytestParameters   = true,
+              },
             },
+            -- Look for .venv in the workspace root; override per-project
+            -- via pyrightconfig.json if your venv is named differently.
+            venvPath = ".",
+            venv     = ".venv",
           },
+          -- Let ruff's I-rules own import sorting; suppress pyright's action
+          disableOrganizeImports = true,
         },
       }
 
-      -- ruff acts as the linter/formatter; pyright handles types only
-      opts.servers.ruff = opts.servers.ruff or {}
-      opts.servers.ruff.cmd_env = { RUFF_TRACE = "messages" }
-      opts.servers.ruff.init_options = {
-        settings = { logLevel = "error" },
+      -- ── RUFF — lint + format (LSP diagnostics + code actions) ─
+      opts.servers.ruff = {
+        cmd_env = { RUFF_TRACE = "messages" },
+        init_options = {
+          settings = {
+            logLevel = "error",
+            lint = {
+              enable = true,
+              -- Rule selection. Override per-project via pyproject.toml [tool.ruff.lint]
+              -- or a ruff.toml at the project root — those take precedence.
+              select = {
+                "E",    -- pycodestyle errors
+                "W",    -- pycodestyle warnings
+                "F",    -- pyflakes (undefined names, unused imports)
+                "I",    -- isort  (import ordering — replaces standalone isort)
+                "N",    -- pep8-naming conventions
+                "UP",   -- pyupgrade (modernize to target Python version)
+                "B",    -- flake8-bugbear (subtle bugs + opinionated checks)
+                "C4",   -- flake8-comprehensions (simplify list/dict/set expressions)
+                "SIM",  -- flake8-simplify (simplify if/return/with patterns)
+              },
+              ignore = {
+                "E501",  -- line-too-long: ruff format handles line length
+              },
+            },
+            format = {
+              preview = false,  -- stable formatting only; no experimental rules
+            },
+            codeAction = {
+              fixViolation       = { enable = true },   -- "fix" code action in hover
+              disableRuleComment = { enable = true },   -- "# noqa: ..." code action
+            },
+          },
+        },
       }
     end,
   },
@@ -162,19 +219,25 @@ return {
     "stevearc/conform.nvim",
     opts = {
       formatters_by_ft = {
-        javascript = { "prettier" },
+        -- Web
+        javascript      = { "prettier" },
         javascriptreact = { "prettier" },
-        typescript = { "prettier" },
+        typescript      = { "prettier" },
         typescriptreact = { "prettier" },
-        css = { "prettier" },
-        scss = { "prettier" },
-        html = { "prettier" },
-        json = { "prettier" },
-        jsonc = { "prettier" },
-        yaml = { "prettier" },
-        markdown = { "prettier" },
-        mdx = { "prettier" },
-        sql = { "sql_formatter" },
+        css             = { "prettier" },
+        scss            = { "prettier" },
+        html            = { "prettier" },
+        json            = { "prettier" },
+        jsonc           = { "prettier" },
+        yaml            = { "prettier" },
+        markdown        = { "prettier" },
+        mdx             = { "prettier" },
+        -- Python — ruff_fix runs `ruff check --fix` first (imports, UP, B, SIM),
+        -- then ruff_format runs `ruff format` (spacing, line length, trailing commas).
+        -- Order matters: fix violations before reformatting.
+        python          = { "ruff_fix", "ruff_format" },
+        -- SQL
+        sql             = { "sql_formatter" },
       },
       format_on_save = {
         timeout_ms = 2000,
